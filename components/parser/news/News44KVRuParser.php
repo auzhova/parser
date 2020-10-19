@@ -38,7 +38,12 @@ class News44KVRuParser implements ParserInterface
             $itemCrawler = new Crawler($contentPage);
 
             $title = $itemCrawler->filterXPath("//h2[@class='item-page-title']")->text();
-            $date = $this->getDate($itemCrawler->filterXPath("//*[@id='centercontent']/div[2]/p[1]/em")->text());
+            $dateSrc = $itemCrawler->filterXPath("//h2[@class='item-page-title']")->siblings();
+            $date = '';
+            if ($dateSrc->getNode(0)) {
+                $date = $dateSrc->getNode(0)->nodeValue;
+            }
+            $date = $this->getDate($date);
 
             $description = '';
             $p = [];
@@ -62,8 +67,6 @@ class News44KVRuParser implements ParserInterface
                 $url,
                 null
             );
-
-            $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $title, null, null, 2);
 
             foreach ($p as $text) {
                 $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $text);
@@ -119,9 +122,12 @@ class News44KVRuParser implements ParserInterface
      */
     protected function getDate(string $date): string
     {
-        $ruMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря', 'года'];
-        $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', ''];
-        return str_ireplace($ruMonths, $enMonths, $date);
+        $date = $this->clearText($date);
+        $ruMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря', 'года', '.', ','];
+        $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', '', ':', ''];
+        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        return $newDate->format("Y-m-d H:i:s");
     }
 
     /**
