@@ -51,8 +51,6 @@ class MozhgatvRuParser implements ParserInterface
                 $image
             );
 
-            $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $title, null, null, 1);
-
             $newContentCrawler = $itemCrawler->filterXPath("//div[@class='field-item even']/p");
 
             foreach ($newContentCrawler as $content) {
@@ -134,7 +132,9 @@ class MozhgatvRuParser implements ParserInterface
             'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
             'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-        return str_ireplace($ruMonths, $enMonths, $date);
+        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        return $newDate->format("Y-m-d H:i:s");
     }
 
     /**
