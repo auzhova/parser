@@ -63,8 +63,6 @@ class Rentv42Parser implements ParserInterface
                 $image
             );
 
-            $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $title, null, null, 1);
-
             $newsContent = $itemCrawler->filterXPath("//*[@class='td-post-content td-pb-padding-side']");
             if (!$newsContent->getNode(0)) {
                 $newsContent = $itemCrawler->filterXPath("//*[@class='td-post-content']");
@@ -158,7 +156,9 @@ class Rentv42Parser implements ParserInterface
     {
         $ruMonths = ['Янв', 'Фев', 'Мар', 'Апр', 'Мая', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-        return str_ireplace($ruMonths, $enMonths, $date);
+        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        return $newDate->format("Y-m-d H:i:s");
     }
 
     /**
@@ -215,7 +215,7 @@ class Rentv42Parser implements ParserInterface
     {
         $text = trim($text);
         $text = htmlentities($text);
-        $text = str_replace("&nbsp;",'',$text);
+        $text = str_replace("&nbsp;",' ',$text);
         $text = html_entity_decode($text);
         return $text;
     }
