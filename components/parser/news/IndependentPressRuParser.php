@@ -39,7 +39,8 @@ class IndependentPressRuParser implements ParserInterface
             $itemCrawler = new Crawler($contentPage);
 
             $title = $itemCrawler->filterXPath("//*[@class='story-full group']/h1")->text();
-            $date = $itemCrawler->filterXPath("//*[@class='nav-story']/li")->text();
+            $date = new \DateTime($itemCrawler->filterXPath("//*[@class='nav-story']/li")->text());
+            $date->setTimezone(new \DateTimeZone("UTC"));
             $image = $this->getHeadUrl($itemCrawler->filterXPath("//*[@class='fullimgcenter']")->attr('src'));
             $description = $itemCrawler->filterXPath("//*[@class='full-str']")->text();
 
@@ -47,12 +48,10 @@ class IndependentPressRuParser implements ParserInterface
                 self::class,
                 $title,
                 $description,
-                $date,
+                $date->format("Y-m-d H:i:s"),
                 $url,
                 $image
             );
-
-            $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $title, null, null, 1);
 
             $newContentCrawler = (new Crawler($itemCrawler->filterXPath("//*[@class='full-str']")->html()))->filterXPath('//body');
 
