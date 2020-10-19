@@ -53,8 +53,6 @@ class TransportNewsRuParser implements ParserInterface
                 $image
             );
 
-            $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $title, null, null, 1);
-
             $newContentCrawler = (new Crawler($itemCrawler->filterXPath("//*[@class='entry-content']")->html()))->filterXPath('//body')->children();
 
             foreach ($newContentCrawler as $content) {
@@ -107,9 +105,10 @@ class TransportNewsRuParser implements ParserInterface
      */
     protected function getHeadUrl($url): string
     {
-        return strpos($url, 'http') === false
+        $newUrl = strpos($url, 'http') === false
             ? self::SITE_URL . $url
             : $url;
+        return $this->encodeUrl($newUrl);
     }
 
     /**
@@ -122,7 +121,9 @@ class TransportNewsRuParser implements ParserInterface
     {
         $ruMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря', 'года'];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', ''];
-        return str_ireplace($ruMonths, $enMonths, $date);
+        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        return $newDate->format("Y-m-d H:i:s");
     }
 
     /**
@@ -181,5 +182,29 @@ class TransportNewsRuParser implements ParserInterface
         $text = str_replace("&nbsp;",'',$text);
         $text = html_entity_decode($text);
         return $text;
+    }
+
+    /**
+     * Русские буквы в ссылке
+     *
+     * @param string $url
+     *
+     * @return string
+     */
+    protected function encodeUrl(string $url): string
+    {
+        if (preg_match('/[А-Яа-яЁё]/iu', $url)) {
+            preg_match_all('/[А-Яа-яЁё]/iu', $url, $result);
+            $search = [];
+            $replace = [];
+            foreach ($result as $item) {
+                foreach ($item as $key=>$value) {
+                    $search[$key] = $value;
+                    $replace[$key] = urlencode($value);
+                }
+            }
+            $url = str_replace($search, $replace, $url);
+        }
+        return $url;
     }
 }
