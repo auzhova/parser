@@ -52,8 +52,6 @@ class Inform69RuParser implements ParserInterface
                 $image
             );
 
-            $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $title, null, null, 1);
-
             $newContentCrawler = (new Crawler($itemCrawler->filterXPath("//*[@class='articletext']")->html()))->filterXPath('//body')->children();
 
             foreach ($newContentCrawler as $content) {
@@ -127,7 +125,10 @@ class Inform69RuParser implements ParserInterface
         $ruDate = ArrayHelper::getValue($str, 0, '');
         $ruMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-        return $ruDate ? str_ireplace($ruMonths, $enMonths, $ruDate) : '';
+        $newData = $ruDate ? str_ireplace($ruMonths, $enMonths, $ruDate) : '';
+        $newData = new \DateTime($newData);
+        $newData->setTimezone(new \DateTimeZone("UTC"));
+        return $newData->format("Y-m-d H:i:s");
     }
 
     /**
