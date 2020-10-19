@@ -41,7 +41,7 @@ class PrimRepRuParser implements ParserInterface
             $itemCrawler = new Crawler($contentPage);
 
             $title = $itemCrawler->filterXPath("//h1[@class='entry-title']")->text();
-            $date = $itemCrawler->filterXPath("//time[@class='entry-date updated']")->text();
+            $date = $this->getDate($itemCrawler->filterXPath("//time[@class='entry-date updated']")->text());
             $image = $this->getHeadUrl($itemCrawler->filterXPath("//div[@class='entry-content']//*//img")->attr('src'));
             $description = $this->getDescription($itemCrawler->filterXPath("//div[@class='entry-content']")->text());
 
@@ -57,8 +57,6 @@ class PrimRepRuParser implements ParserInterface
                 $url,
                 $image
             );
-
-            $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $title, null, null, 1);
 
             $newContentCrawler = (new Crawler($itemCrawler->filterXPath("//div[@class='entry-content']")->html()))->filterXPath('//body')->children();
             foreach ($newContentCrawler as $content) {
@@ -206,4 +204,18 @@ class PrimRepRuParser implements ParserInterface
         }
         return $text;
     }
+
+    /**
+     *
+     * @param string $date
+     *
+     * @return string
+     */
+    protected function getDate(string $date): string
+    {
+        $newDate = new \DateTime($date);
+        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        return $newDate->format("Y-m-d H:i:s");
+    }
+
 }
