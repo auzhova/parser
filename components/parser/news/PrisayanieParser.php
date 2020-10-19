@@ -38,7 +38,7 @@ class PrisayanieParser implements ParserInterface
             $itemCrawler = new Crawler($contentPage);
 
             $title = $itemCrawler->filterXPath("//header/a")->text();
-            $date = $itemCrawler->filterXPath("//header/time")->text();
+            $date = $this->getDate($itemCrawler->filterXPath("//header/time")->text());
             $image = null;
             $imgSrc = $itemCrawler->filterXPath("//div/a/img");
             if ($imgSrc->getNode(0)) {
@@ -181,4 +181,18 @@ class PrisayanieParser implements ParserInterface
         $text = html_entity_decode($text);
         return $text;
     }
+
+    /**
+     *
+     * @param string $date
+     *
+     * @return string
+     */
+    protected function getDate(string $date): string
+    {
+        $newDate = new \DateTime($date);
+        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        return $newDate->format("Y-m-d H:i:s");
+    }
+
 }
