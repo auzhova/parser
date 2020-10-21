@@ -81,7 +81,7 @@ class RadiommKzParser implements ParserInterface
             }
 
             $video = $itemCrawler->filterXPath("//div[@class='radio-youtube-banner']")->filterXPath('//iframe');
-            if ($video->nodeName(0) && $src = $video->attr('src')) {
+            if ($video->getNode(0) && $src = $video->attr('src')) {
                 if (strpos($src, 'youtube') !== false) {
                     $youId = basename(parse_url($src, PHP_URL_PATH));
 
