@@ -48,7 +48,7 @@ class NewsFrontInfoParser implements ParserInterface
             $image = null;
             $imgSrc = $itemCrawler->filterXPath("//div[@class='article__content']/*/img");
             if ($imgSrc->getNode(0)) {
-                $image = $this->getHeadUrl($image);
+                $image = $this->getHeadUrl($imgSrc->attr('src'));
                 if (!getimagesize($image)){
                     $image = $this->getHeadUrl($itemCrawler->filterXPath("//meta[@property='og:image:secure_url']")->attr('content'));
                 }
