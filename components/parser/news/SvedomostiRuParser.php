@@ -141,7 +141,7 @@ class SvedomostiRuParser implements ParserInterface
         }
         $date = $day . ' ' . $month;
         $ruMonths = ['янв', 'фев', 'мар', 'апр', 'мая', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-        $enMonths = ['january', 'february', 'march', 'april', 'мая', 'мая', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+        $enMonths = ['january', 'february', 'march', 'april', 'may', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
         $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
         $newDate->setTimezone(new \DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
