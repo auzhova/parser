@@ -67,12 +67,8 @@ class GtrkRuParser implements ParserInterface
                 $image
             );
 
-            $newContentCrawler = $itemCrawler->filterXPath("//div[@class='news-single-item']")->children();//->filterXPath('//div[@class="news-single-backlink"]');
+            $newContentCrawler = $itemCrawler->filterXPath("//div[@class='news-single-item/p']");
             foreach ($newContentCrawler as $key => $contentNew) {
-                if ($key < 2) {
-                    continue;
-                }
-
                 foreach ($contentNew->childNodes as $childNode) {
                     if ($childNode->childNodes->count()) {
                         foreach ($childNode->childNodes as $childNodeItem) {
