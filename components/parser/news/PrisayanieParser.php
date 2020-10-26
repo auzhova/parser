@@ -7,6 +7,8 @@ use app\components\Helper;
 use app\components\parser\NewsPost;
 use app\components\parser\NewsPostItem;
 use app\components\parser\ParserInterface;
+use DateTime;
+use DateTimeZone;
 use RuntimeException;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -190,8 +192,10 @@ class PrisayanieParser implements ParserInterface
      */
     protected function getDate(string $date): string
     {
-        $newDate = new \DateTime($date);
-        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        $now = new DateTime();
+        $time = $now->setTimezone(new DateTimeZone("UTC"))->format("H:i:s");
+        $newDate = new DateTime($time . ' '. $date);
+        $newDate->setTimezone(new DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
     }
 
