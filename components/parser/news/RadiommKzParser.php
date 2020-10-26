@@ -7,6 +7,8 @@ use app\components\Helper;
 use app\components\parser\NewsPost;
 use app\components\parser\NewsPostItem;
 use app\components\parser\ParserInterface;
+use DateTime;
+use DateTimeZone;
 use RuntimeException;
 use Symfony\Component\DomCrawler\Crawler;
 use yii\helpers\ArrayHelper;
@@ -45,7 +47,12 @@ class RadiommKzParser implements ParserInterface
             $title = $itemCrawler->filterXPath("//div[@class='radio-banner__caption-text']")->text();
             $date = $this->getDate($itemCrawler->filterXPath("//div[@class='radio-live radio-caption inline']")->text());
             $image = null;
-            $description = $itemCrawler->filterXPath('//div[@class="radio-banner__about-content__text"]')->text();
+            $description = $itemCrawler->filterXPath('//div[@class="radio-banner__about-content__text"]');
+            if ($description->getNode(0)) {
+                $description = $this->clearText($description->getNode(0)->nodeValue);
+            } else {
+                $description =  $description->text();
+            }
 
             $post = new NewsPost(
                 self::class,
@@ -57,9 +64,9 @@ class RadiommKzParser implements ParserInterface
             );
 
             $newContentCrawler = $itemCrawler->filterXPath('//div[@class="radio-banner__about-content__text"]');
-            foreach ($newContentCrawler as $content) {
-                foreach ($content->childNodes as $key => $childNode) {
-                    $nodeValue = $this->clearText($childNode->nodeValue);
+            foreach ($newContentCrawler as $key => $content) {
+                foreach ($content->childNodes as $childNode) {
+                    $nodeValue = $this->clearText($childNode->nodeValue, [$post->description]);
                     if (in_array($childNode->nodeName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']) && $childNode->nodeValue != $title) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $nodeValue, null, null, (int) substr($childNode->nodeName, 1));
@@ -72,7 +79,7 @@ class RadiommKzParser implements ParserInterface
 
                         $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, null, $this->getHeadUrl($childNode->getAttribute('src')));
 
-                    } elseif ($nodeValue) {
+                    } elseif ($nodeValue && $nodeValue != $post->description) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
 
@@ -136,8 +143,8 @@ class RadiommKzParser implements ParserInterface
         $date = mb_strtolower($date);
         $ruMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
-        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        $newDate = new DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
     }
 
@@ -225,13 +232,17 @@ class RadiommKzParser implements ParserInterface
     /**
      *
      * @param string $text
+     * @param array $search
      *
      * @return string
      */
-    protected function clearText(string $text): string
+    protected function clearText(string $text, array $search = []): string
     {
+        $text = html_entity_decode($text);
+        $text = strip_tags($text);
         $text = htmlentities($text);
-        $text = str_replace("&nbsp;",' ', $text);
+        $search = array_merge(["&nbsp;", '  '], $search);
+        $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
         return trim($text);
     }
