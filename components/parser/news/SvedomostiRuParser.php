@@ -7,6 +7,8 @@ use app\components\Helper;
 use app\components\parser\NewsPost;
 use app\components\parser\NewsPostItem;
 use app\components\parser\ParserInterface;
+use DateTime;
+use DateTimeZone;
 use RuntimeException;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -49,7 +51,10 @@ class SvedomostiRuParser implements ParserInterface
                 $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
 
-            $description = $content->filterXPath('//div[@class="entry-content"]/p')->text();
+            $description = $this->clearText($content->filterXPath('//div[@class="entry-content"]/p[1]')->text());
+            if (!$description) {
+                $description = $this->clearText($content->filterXPath('//div[@class="entry-content"]/p[2]')->text());
+            }
 
             $post = new NewsPost(
                 self::class,
@@ -67,7 +72,7 @@ class SvedomostiRuParser implements ParserInterface
                 }
 
                 foreach ($content->childNodes as $key => $childNode) {
-                    $nodeValue = $this->clearText($childNode->nodeValue);
+                    $nodeValue = $this->clearText($childNode->nodeValue, [$post->description]);
                     if (in_array($childNode->nodeName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']) && $childNode->nodeValue != $title) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $nodeValue, null, null, (int) substr($childNode->nodeName, 1));
@@ -88,7 +93,7 @@ class SvedomostiRuParser implements ParserInterface
 
                         $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, null, $this->getHeadUrl($childNode->getAttribute('src')));
 
-                    } elseif ($nodeValue) {
+                    } elseif ($nodeValue && $nodeValue != $post->description) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
 
@@ -136,14 +141,15 @@ class SvedomostiRuParser implements ParserInterface
         $date = mb_strtolower($date);
         $day = '';
         $month = '';
-        for ($i=0; $i<strlen($date); $i++) {
+        for ($i = 0; $i < strlen($date); $i++) {
             is_numeric($date[$i]) ? $day .= $date[$i] : $month .= $date[$i];
         }
-        $date = $day . ' ' . $month;
+        $time = (new DateTime())->format("H:i:s");
+        $date = $time . ' ' . $day . ' ' . $month;
         $ruMonths = ['янв', 'фев', 'мар', 'апр', 'мая', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
         $enMonths = ['january', 'february', 'march', 'april', 'мая', 'мая', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
-        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        $newDate = new DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
     }
 
@@ -237,13 +243,17 @@ class SvedomostiRuParser implements ParserInterface
     /**
      *
      * @param string $text
+     * @param array $search
      *
      * @return string
      */
-    protected function clearText(string $text): string
+    protected function clearText(string $text, array $search = []): string
     {
+        $text = html_entity_decode($text);
+        $text = strip_tags($text);
         $text = htmlentities($text);
-        $text = str_ireplace(["&nbsp;", 'Share this:'], [' ', ''], $text);
+        $search = array_merge(["&nbsp;", "Share this:"], $search);
+        $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
         return trim($text);
     }
