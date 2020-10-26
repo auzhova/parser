@@ -7,6 +7,8 @@ use app\components\Helper;
 use app\components\parser\NewsPost;
 use app\components\parser\NewsPostItem;
 use app\components\parser\ParserInterface;
+use DateTime;
+use DateTimeZone;
 use RuntimeException;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -45,18 +47,9 @@ class News44KVRuParser implements ParserInterface
             }
             $date = $this->getDate($date);
 
-            $description = '';
-            $p = [];
-
-            $paragraph = $itemCrawler->filterXPath("//*[@class='item-page']/p");
-            foreach ($paragraph as $key => $item) {
-                if ($key >= 2 && $text = $item->nodeValue) {
-                    $text = $this->clearText($text);
-                    if ($text) {
-                        $description = $description . ' ' . $text;
-                        $p[] = $text;
-                    }
-                }
+            $description = $this->clearText($itemCrawler->filterXPath("//*[@class='item-page']/p[2]")->text());
+            if (empty($description)) {
+                $description = $this->clearText($itemCrawler->filterXPath("//*[@class='item-page']/p[3]")->text());
             }
 
             $post = new NewsPost(
@@ -68,8 +61,22 @@ class News44KVRuParser implements ParserInterface
                 null
             );
 
-            foreach ($p as $text) {
-                $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $text);
+            $newContentCrawler = $itemCrawler->filterXPath("//*[@class='item-page']")->children();
+            $dateP = $itemCrawler->filterXPath("//*[@class='item-page']/p[1]")->text();
+
+            foreach ($newContentCrawler as $content) {
+                foreach ($content->childNodes as $key => $childNode) {
+                    $nodeValue = $this->clearText($childNode->nodeValue, [$post->description]);
+                    if ($childNode->nodeName == 'a' && strpos($childNode->getAttribute('href'), 'http') !== false) {
+
+                        $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $childNode->getAttribute('href'));
+
+                    } elseif ($nodeValue && $nodeValue != $dateP && $nodeValue != $title) {
+
+                        $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
+
+                    }
+                }
             }
 
             $posts[] = $post;
@@ -125,8 +132,8 @@ class News44KVRuParser implements ParserInterface
         $date = $this->clearText($date);
         $ruMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря', 'года', '.', ','];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', '', ':', ''];
-        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
-        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        $newDate = new DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
     }
 
@@ -176,15 +183,18 @@ class News44KVRuParser implements ParserInterface
     /**
      *
      * @param string $text
+     * @param array $search
      *
      * @return string
      */
-    protected function clearText(string $text): string
+    protected function clearText(string $text, array $search = []): string
     {
-        $text = trim($text);
-        $text = htmlentities($text);
-        $text = str_replace("&nbsp;",'',$text);
         $text = html_entity_decode($text);
-        return $text;
+        $text = strip_tags($text);
+        $text = htmlentities($text);
+        $search = array_merge(["&nbsp;"], $search);
+        $text = str_replace($search, ' ', $text);
+        $text = html_entity_decode($text);
+        return trim($text);
     }
 }
