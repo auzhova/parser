@@ -7,6 +7,8 @@ use app\components\Helper;
 use app\components\parser\NewsPost;
 use app\components\parser\NewsPostItem;
 use app\components\parser\ParserInterface;
+use DateTime;
+use DateTimeZone;
 use RuntimeException;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -42,7 +44,7 @@ class TransportNewsRuParser implements ParserInterface
             $title = $itemCrawler->filterXPath("//h1[@class='entry-title']")->text();
             $date = $this->getDate($itemCrawler->filterXPath("//*[@id='post-" . $namePage[0] . "']/div[1]")->text());
             $image = $this->getHeadUrl($itemCrawler->filterXPath("//*[@class='entry-content']/*/img")->attr('src'));
-            $description = $itemCrawler->filterXPath("//*[@class='entry-content']")->text();
+            $description = $itemCrawler->filterXPath("//*[@class='entry-content']/p[1]")->text();
 
             $post = new NewsPost(
                 self::class,
@@ -57,7 +59,7 @@ class TransportNewsRuParser implements ParserInterface
 
             foreach ($newContentCrawler as $content) {
                 foreach ($content->childNodes as $childNode) {
-                    $nodeValue = $this->clearText($childNode->nodeValue);
+                    $nodeValue = $this->clearText($childNode->nodeValue, [$post->description]);
                     if ($childNode->nodeName == 'a' && strpos($childNode->getAttribute('href'), 'http') !== false) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $childNode->getAttribute('href'));
@@ -121,8 +123,8 @@ class TransportNewsRuParser implements ParserInterface
     {
         $ruMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря', 'года'];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', ''];
-        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
-        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        $newDate = new DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
     }
 
@@ -172,16 +174,19 @@ class TransportNewsRuParser implements ParserInterface
     /**
      *
      * @param string $text
+     * @param array $search
      *
      * @return string
      */
-    protected function clearText(string $text): string
+    protected function clearText(string $text, array $search = []): string
     {
-        $text = trim($text);
-        $text = htmlentities($text);
-        $text = str_replace("&nbsp;",'',$text);
         $text = html_entity_decode($text);
-        return $text;
+        $text = strip_tags($text);
+        $text = htmlentities($text);
+        $search = array_merge(["&nbsp;"], $search);
+        $text = str_replace($search, ' ', $text);
+        $text = html_entity_decode($text);
+        return trim($text);
     }
 
     /**
