@@ -148,8 +148,8 @@ class SvedomostiRuParser implements ParserInterface
         $date = $time . ' ' . $day . ' ' . $month;
         $ruMonths = ['янв', 'фев', 'мар', 'апр', 'мая', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
-        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        $newDate = new DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
     }
 
@@ -243,11 +243,14 @@ class SvedomostiRuParser implements ParserInterface
     /**
      *
      * @param string $text
+     * @param array $search
      *
      * @return string
      */
-    protected function clearText(string $text): string
+    protected function clearText(string $text, array $search = []): string
     {
+        $text = html_entity_decode($text);
+        $text = strip_tags($text);
         $text = htmlentities($text);
         $search = array_merge(["&nbsp;", "Share this:"], $search);
         $text = str_replace($search, ' ', $text);
