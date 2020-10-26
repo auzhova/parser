@@ -141,15 +141,15 @@ class SvedomostiRuParser implements ParserInterface
         $date = mb_strtolower($date);
         $day = '';
         $month = '';
-        for ($i = 0; $i < strlen($date); $i++) {
+        for ($i=0; $i<strlen($date); $i++) {
             is_numeric($date[$i]) ? $day .= $date[$i] : $month .= $date[$i];
         }
         $time = (new DateTime())->format("H:i:s");
         $date = $time . ' ' . $day . ' ' . $month;
         $ruMonths = ['янв', 'фев', 'мар', 'апр', 'мая', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-        $enMonths = ['january', 'february', 'march', 'april', 'мая', 'мая', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-        $newDate = new DateTime(str_ireplace($ruMonths, $enMonths, $date));
-        $newDate->setTimezone(new DateTimeZone("UTC"));
+        $enMonths = ['january', 'february', 'march', 'april', 'may', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+        $newDate = new \DateTime(str_ireplace($ruMonths, $enMonths, $date));
+        $newDate->setTimezone(new \DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
     }
 
@@ -243,14 +243,11 @@ class SvedomostiRuParser implements ParserInterface
     /**
      *
      * @param string $text
-     * @param array $search
      *
      * @return string
      */
-    protected function clearText(string $text, array $search = []): string
+    protected function clearText(string $text): string
     {
-        $text = html_entity_decode($text);
-        $text = strip_tags($text);
         $text = htmlentities($text);
         $search = array_merge(["&nbsp;", "Share this:"], $search);
         $text = str_replace($search, ' ', $text);
