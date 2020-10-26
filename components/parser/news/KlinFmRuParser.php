@@ -7,6 +7,8 @@ use app\components\Helper;
 use app\components\parser\NewsPost;
 use app\components\parser\NewsPostItem;
 use app\components\parser\ParserInterface;
+use DateTime;
+use DateTimeZone;
 use RuntimeException;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -41,11 +43,15 @@ class KlinFmRuParser implements ParserInterface
 
             $itemCrawler = new Crawler($contentPage);
             $content = $itemCrawler->filterXPath("//div[@id='content']");
+            if (!$content->getNode(0)) {
+                continue;
+            }
+
             $title = $content->filterXPath("//h1[@class='entry-title']");
             if ($title->getNode(0)) {
                 $title = $title->text();
             } else {
-                $title = $content->filterXPath("//div[@class='entry-content']/*/p[1]")->text();
+                $title = $content->filterXPath("//div[@class='entry-content']/st_index/p[1]")->text();
             }
 
             $date = $this->getDate($content->filterXPath("//span[@class='date published time']")->attr('title'));
@@ -54,7 +60,7 @@ class KlinFmRuParser implements ParserInterface
             if ($imgSrc->getNode(0)) {
                 $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
-            $description = $content->filterXPath('//div[@class="entry-content"]')->children()->text();
+            $description = $content->filterXPath('//div[@class="entry-content"]/st_index/p[1]')->text();
             $description = str_replace($title, '', $description);
 
             $post = new NewsPost(
@@ -69,7 +75,7 @@ class KlinFmRuParser implements ParserInterface
             $newContentCrawler = $content->filterXPath('//div[@class="entry-content"]/st_index/p');
             foreach ($newContentCrawler as $content) {
                 foreach ($content->childNodes as $key => $childNode) {
-                    $nodeValue = $this->clearText($childNode->nodeValue);
+                    $nodeValue = $this->clearText($childNode->nodeValue, [$post->description]);
                     if (in_array($childNode->nodeName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']) && $childNode->nodeValue != $title) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $nodeValue, null, null, (int) substr($childNode->nodeName, 1));
@@ -92,7 +98,7 @@ class KlinFmRuParser implements ParserInterface
 
                         $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, null, $childNode->getAttribute('src'));
 
-                    } elseif ($nodeValue) {
+                    } elseif ($nodeValue && $nodeValue != $post->description) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
 
@@ -137,8 +143,8 @@ class KlinFmRuParser implements ParserInterface
      */
     protected function getDate(string $date): string
     {
-        $newDate = new \DateTime($date);
-        $newDate->setTimezone(new \DateTimeZone("UTC"));
+        $newDate = new DateTime($date);
+        $newDate->setTimezone(new DateTimeZone("UTC"));
         return $newDate->format("Y-m-d H:i:s");
     }
 
@@ -226,13 +232,17 @@ class KlinFmRuParser implements ParserInterface
     /**
      *
      * @param string $text
+     * @param array $search
      *
      * @return string
      */
-    protected function clearText(string $text): string
+    protected function clearText(string $text, array $search = []): string
     {
+        $text = html_entity_decode($text);
+        $text = strip_tags($text);
         $text = htmlentities($text);
-        $text = str_replace("&nbsp;",' ',$text);
+        $search = array_merge(["&nbsp;"], $search);
+        $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
         return trim($text);
     }
