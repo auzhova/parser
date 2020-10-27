@@ -63,7 +63,7 @@ class MvestnikRuParser implements ParserInterface
                 $image
             );
 
-            $newContentCrawler = $content->filterXPath('//div[@class="articleBody"]');//->children();
+            $newContentCrawler = $content->filterXPath('//div[@class="articleBody"]');
             foreach ($newContentCrawler as $contentNew) {
                 if ($contentNew->childNodes->count() > 1) {
                     foreach ($contentNew->childNodes as $childNode) {
