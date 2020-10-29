@@ -53,7 +53,7 @@ class LyubereckiyRuParser implements ParserInterface
                 $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
             $description = '';
-            $descriptionSrc = $content->filterXPath('//div[@class="entry-content"]');//->children();
+            $descriptionSrc = $content->filterXPath('//div[@class="entry-content"]');
             foreach ($descriptionSrc as $item) {
                 foreach ($item->childNodes as $value) {
                     if (!$description && $text = $this->clearText($value->nodeValue)) {
@@ -71,7 +71,7 @@ class LyubereckiyRuParser implements ParserInterface
                 $image
             );
 
-            $newContentCrawler = $content->filterXPath('//div[@class="entry-content"]');//->children();
+            $newContentCrawler = $content->filterXPath('//div[@class="entry-content"]');
             foreach ($newContentCrawler as $contentNew) {
                 if ($contentNew->childNodes->count() > 1) {
                     foreach ($contentNew->childNodes as $childNode) {
