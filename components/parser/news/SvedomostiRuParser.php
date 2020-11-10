@@ -51,10 +51,7 @@ class SvedomostiRuParser implements ParserInterface
                 $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
 
-            $description = $this->clearText($content->filterXPath('//div[@class="entry-content"]/p[1]')->text());
-            if (!$description) {
-                $description = $this->clearText($content->filterXPath('//div[@class="entry-content"]/p[2]')->text());
-            }
+            $description = $title;
 
             $post = new NewsPost(
                 self::class,
@@ -64,6 +61,19 @@ class SvedomostiRuParser implements ParserInterface
                 $url,
                 $image
             );
+
+            $description = '';
+            $descriptionSrc = $content->filterXPath('//div[@class="entry-content"]')->children();
+            foreach ($descriptionSrc as $key => $item) {
+                foreach ($item->childNodes as $value) {
+                    if (!$description && ($text = $this->clearText($value->nodeValue)) && $text != $title) {
+                        $description = $text;
+                    }
+                }
+            }
+            if ($description) {
+                $post->description = $description;
+            }
 
             $newContentCrawler = $content->filterXPath('//div[@class="entry-content"]')->children();
             foreach ($newContentCrawler as $content) {
