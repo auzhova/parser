@@ -44,13 +44,19 @@ class NversiaRuParser implements ParserInterface
 
             $itemCrawler = new Crawler($contentPage);
             $title = $itemCrawler->filterXPath("//h1[@class='post-title']")->text();
-            $date = $this->getDate($itemCrawler->filterXPath("//div[@class='meta-item']/time")->attr('datetime'));
+            $dateSrc = $itemCrawler->filterXPath("//div[@class='meta-item']/time");
+            if ($dateSrc->getNode(0)) {
+                $date = $this->getDate($dateSrc->attr('datetime'));
+            } else {
+                $date = $this->getDate();
+            }
+
             $image = null;
             $imgSrc = $itemCrawler->filterXPath("//div[@class='post-cover__container']/img");
             if ($imgSrc->getNode(0)) {
                 $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
-            $description = $itemCrawler->filterXPath("//div[@class='article']")->filterXPath('//p[1]')->text();
+            $description = $this->clearText($itemCrawler->filterXPath("//div[@class='article']")->filterXPath('//p[1]')->text());
 
             $post = new NewsPost(
                 self::class,
@@ -64,13 +70,7 @@ class NversiaRuParser implements ParserInterface
             $newContentCrawler = $itemCrawler->filterXPath("//div[@class='article']");
             foreach ($newContentCrawler as $contentNew) {
                 foreach ($contentNew->childNodes as $childNode) {
-                    if ($childNode->childNodes->count()) {
-                        foreach ($childNode->childNodes as $childNodeItem) {
-                            $this->setItemPostValue($post, $childNodeItem);
-                        }
-                    }else {
-                        $this->setItemPostValue($post, $childNode);
-                    }
+                    $this->setItemPostValue($post, $childNode);
                 }
             }
 
@@ -115,7 +115,21 @@ class NversiaRuParser implements ParserInterface
 
         } elseif ($node->nodeName == 'a' && strpos($href = $this->getHeadUrl($node->getAttribute('href')), 'http') !== false) {
 
-            $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
+            if ($node->childNodes->count() > 1) {
+                foreach ($node->childNodes as $childNode) {
+                    if ($childNode->nodeName != 'img') {
+                        continue;
+                    }
+                    $imgSrc = $this->getHeadUrl($childNode->getAttribute('src'));
+                    if (!$post->image) {
+                        $post->image = $imgSrc;
+                    } else {
+                        $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->getAttribute('title'), $imgSrc);
+                    }
+                }
+            } else {
+                $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
+            }
 
         } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('data-lazy-src'))) != $post->image && getimagesize($imgSrc)) {
 
@@ -141,7 +155,7 @@ class NversiaRuParser implements ParserInterface
                 $this->setItemPostValue($post, $childNode);
             }
 
-        }  elseif ($nodeValue && $nodeValue != $post->description) {
+        }  elseif ($nodeValue && $nodeValue != $post->description && mb_strpos($post->description, $nodeValue) === false) {
 
             $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
 
@@ -261,6 +275,9 @@ class NversiaRuParser implements ParserInterface
      */
     protected function clearText(string $text, array $search = []): string
     {
+        if ($text == '.') {
+            return '';
+        }
         $text = html_entity_decode($text);
         $text = strip_tags($text);
         $text = htmlentities($text);
