@@ -50,7 +50,10 @@ class RekvizitInfoParser implements ParserInterface
             if ($imgSrc->getNode(0)) {
                 $image = $this->getHeadUrl($imgSrc->attr('data-src'));
             }
-            $description = $itemCrawler->filterXPath("//section/h2")->text();
+            $description = $this->clearText($itemCrawler->filterXPath("//section/h2")->text());
+            if (!$description) {
+                $description = $this->clearText($itemCrawler->filterXPath("//section/p[1]")->text());
+            }
 
             $post = new NewsPost(
                 self::class,
@@ -170,9 +173,15 @@ class RekvizitInfoParser implements ParserInterface
      */
     protected function getDate(string $date = ''): string
     {
+        $now = new DateTime();
+        $time = $now->format('H:i:s');
         $newDate = new DateTime($date);
         $newDate->setTimezone(new DateTimeZone("UTC"));
-        return $newDate->format("Y-m-d H:i:s");
+        $newDate = $newDate->format("Y-m-d H:i:s");
+        if (strpos($newDate, '00:00:00') != false) {
+            $newDate = str_replace('00:00:00', $time, $newDate);
+        }
+        return $newDate;
     }
 
 
@@ -285,6 +294,9 @@ class RekvizitInfoParser implements ParserInterface
         $search = array_merge(["&nbsp;"], $search);
         $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
+        if ($text == '.') {
+            return '';
+        }
         return trim($text);
     }
 }
