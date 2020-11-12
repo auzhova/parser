@@ -87,7 +87,7 @@ class Rentv42Parser implements ParserInterface
                             $this->addItemPost($post, NewsPostItem::TYPE_VIDEO, $childNode->getAttribute('title'), null, null, null, $youId);
 
                         }
-                    } elseif ($nodeValue && strpos($nodeValue, 'var ') === false && strpos($nodeValue, 'adsbygoogle') === false && strpos($nodeValue, '&#10') === false) {
+                    } elseif ($nodeValue && $nodeValue != $post->description && strpos($nodeValue, 'var ') === false && strpos($nodeValue, 'adsbygoogle') === false && strpos($nodeValue, '&#10') === false) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
 
@@ -149,7 +149,13 @@ class Rentv42Parser implements ParserInterface
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
         $newDate = new DateTime(str_ireplace($ruMonths, $enMonths, $date));
         $newDate->setTimezone(new DateTimeZone("UTC"));
-        return $newDate->format("Y-m-d H:i:s");
+        $newDate = $newDate->format("Y-m-d H:i:s");
+        $now = new DateTime();
+        $time = $now->format('H:i:s');
+        if (strpos($newDate, '00:00:00') != false) {
+            $newDate = str_replace('00:00:00', $time, $newDate);
+        }
+        return $newDate;
     }
 
     /**
@@ -164,7 +170,7 @@ class Rentv42Parser implements ParserInterface
         $records = [];
 
         $crawler = new Crawler($page);
-        $list = $crawler->filterXPath("//div[@class='td_block_inner td-column-2']")->filterXPath("//*[@class='entry-title td-module-title']/a");
+        $list = $crawler->filterXPath("//h3[@class='entry-title td-module-title']/a");
 
         foreach ($list as $item) {
             $records[] = $item->getAttribute("href");
