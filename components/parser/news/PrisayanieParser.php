@@ -42,7 +42,7 @@ class PrisayanieParser implements ParserInterface
             $title = $itemCrawler->filterXPath("//header/a")->text();
             $date = $this->getDate($itemCrawler->filterXPath("//header/time")->text());
             $image = null;
-            $imgSrc = $itemCrawler->filterXPath("//div/a/img");
+            $imgSrc = $itemCrawler->filterXPath('//section[@class="articles-main"]')->filterXPath("//div/a/img");
             if ($imgSrc->getNode(0)) {
                 $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
