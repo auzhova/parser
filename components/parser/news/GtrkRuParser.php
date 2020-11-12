@@ -67,16 +67,10 @@ class GtrkRuParser implements ParserInterface
                 $image
             );
 
-            $newContentCrawler = $itemCrawler->filterXPath("//div[@class='news-single-item/p']");
+            $newContentCrawler = $itemCrawler->filterXPath("//div[@class='news-single-item']/p");
             foreach ($newContentCrawler as $key => $contentNew) {
                 foreach ($contentNew->childNodes as $childNode) {
-                    if ($childNode->childNodes->count()) {
-                        foreach ($childNode->childNodes as $childNodeItem) {
-                            $this->setItemPostValue($post, $childNodeItem);
-                        }
-                    }else {
-                        $this->setItemPostValue($post, $childNode);
-                    }
+                    $this->setItemPostValue($post, $childNode);
                 }
             }
 
@@ -171,7 +165,13 @@ class GtrkRuParser implements ParserInterface
     {
         $newDate = new DateTime($date);
         $newDate->setTimezone(new DateTimeZone("UTC"));
-        return $newDate->format("Y-m-d H:i:s");
+        $newDate = $newDate->format("Y-m-d H:i:s");
+        $now = new DateTime();
+        $time = $now->format('H:i:s');
+        if (strpos($newDate, '00:00:00') != false) {
+            $newDate = str_replace('00:00:00', $time, $newDate);
+        }
+        return $newDate;
     }
 
 
