@@ -87,6 +87,13 @@ class TuranTodayComParser implements ParserInterface
 
                 if ($contentNew->childNodes->count() > 1) {
                     foreach ($contentNew->childNodes as $childNode) {
+                        if ($childNode->nodeName == 'style') {
+                            continue;
+                        }
+                        if ($childNode->attributes && $childNode->nodeName == 'span'
+                            && $childNode->getAttribute('class') == 'post-tags') {
+                            continue;
+                        }
                         $this->setItemPostValue($post, $childNode);
                     }
                 } else {
