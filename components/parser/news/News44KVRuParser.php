@@ -71,7 +71,7 @@ class News44KVRuParser implements ParserInterface
 
                         $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $childNode->getAttribute('href'));
 
-                    } elseif ($nodeValue && $nodeValue != $dateP && $nodeValue != $title) {
+                    } elseif ($nodeValue && $nodeValue != $post->description && $nodeValue != $dateP && $nodeValue != $title) {
 
                         $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
 
@@ -129,6 +129,7 @@ class News44KVRuParser implements ParserInterface
      */
     protected function getDate(string $date): string
     {
+        $date = str_replace('..', ':', $date);
         $date = $this->clearText($date);
         $ruMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря', 'года', '.', ','];
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', '', ':', ''];
