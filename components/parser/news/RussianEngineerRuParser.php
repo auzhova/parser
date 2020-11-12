@@ -41,14 +41,14 @@ class RussianEngineerRuParser implements ParserInterface
 
             $itemCrawler = new Crawler($contentPage);
             $title = $itemCrawler->filterXPath("//div[@class='zagh']/h1")->text();
-            $date = $this->getDate('now');
+            $date = $this->getDate();
             $image = null;
             $imgSrc = $itemCrawler->filterXPath("//img[@class='picf']");
             if ($imgSrc->getNode(0)) {
-                $image = $this->getHeadUrl($imgSrc->attr('src'));
+                $image = $this->getHeadUrl($imgSrc->attr('src'), '/');
             }
 
-            $description = $itemCrawler->filterXPath("//div[@class='txt']/b[1]")->text();
+            $description = $this->clearText($itemCrawler->filterXPath("//div[@class='txt']/b[1]")->text());
 
             $post = new NewsPost(
                 self::class,
@@ -62,16 +62,7 @@ class RussianEngineerRuParser implements ParserInterface
             $newContentCrawler = $itemCrawler->filterXPath("//div[@class='txt']");
             foreach ($newContentCrawler as $contentNew) {
                 foreach ($contentNew->childNodes as $key => $childNode) {
-                    if ($key < 1) {
-                        continue;
-                    }
-                    if ($childNode->childNodes->count()) {
-                        foreach ($childNode->childNodes as $childNodeItem) {
-                            $this->setItemPostValue($post, $childNodeItem);
-                        }
-                    }else {
-                        $this->setItemPostValue($post, $childNode);
-                    }
+                    $this->setItemPostValue($post, $childNode);
                 }
             }
 
@@ -109,7 +100,7 @@ class RussianEngineerRuParser implements ParserInterface
      * @param \DOMNode $node
      */
     protected function setItemPostValue (NewsPost $post, \DOMNode $node): void {
-        $nodeValue = $this->clearText($node->nodeValue);
+        $nodeValue = $this->clearText($node->nodeValue, [$post->description]);
         if (in_array($node->nodeName, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']) && $nodeValue) {
 
             $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $nodeValue, null, null, (int)substr($node->nodeName, 1));
@@ -132,17 +123,8 @@ class RussianEngineerRuParser implements ParserInterface
 
             }
 
-        } elseif ($node->childNodes->count()) {
-
-            foreach ($node->childNodes as $childNode) {
-
-                $this->setItemPostValue($post, $childNode);
-            }
-
-        } elseif ($nodeValue) {
-
+        } elseif ($nodeValue && $post->description != $nodeValue) {
             $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
-
         }
     }
 
@@ -152,7 +134,7 @@ class RussianEngineerRuParser implements ParserInterface
      *
      * @return string
      */
-    protected function getDate(string $date): string
+    protected function getDate(string $date = ''): string
     {
         $newDate = new \DateTime();
         $newDate->setTimezone(new \DateTimeZone("UTC"));
@@ -248,13 +230,18 @@ class RussianEngineerRuParser implements ParserInterface
     /**
      *
      * @param string $text
+     * @param array $search
      *
      * @return string
      */
-    protected function clearText(string $text): string
+    protected function clearText(string $text, array $search = []): string
     {
+        $text = html_entity_decode($text);
+        $text = strip_tags($text);
         $text = htmlentities($text);
-        $text = str_replace(["&nbsp;", "\r\n", "\r", "\n", "\t"], ' ', $text);
+        $search = array_merge(["&nbsp;"], $search);
+        $text = str_replace(["\r\n", "\r", "\n", "\t"], '', $text);
+        $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
         return trim($text);
     }
