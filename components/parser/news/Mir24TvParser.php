@@ -233,10 +233,6 @@ class Mir24TvParser implements ParserInterface
      */
     protected function getListNews(string $page): array
     {
-        return [
-            'https://mir24.tv/news/16432484/anglichanka-bolshe-mesyaca-pisala-nahodyashcheisya-v-kome-podruge-i-ta-ochnulas'
-        ];
-
         $records = [];
 
         $crawler = new Crawler($page);
