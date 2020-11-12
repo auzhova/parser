@@ -277,12 +277,18 @@ class MoygorodOnlineRuParser implements ParserInterface
      */
     protected function clearText(string $text, array $search = []): string
     {
+        if ($text == '.') {
+            return '';
+        }
         $text = html_entity_decode($text);
         $text = strip_tags($text);
         $text = htmlentities($text);
         $search = array_merge(["&nbsp;"], $search);
         $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
+        if (($point = mb_stripos($text, '.')) !== false && $point == 0) {
+            $text = mb_substr($text, $point+1);
+        }
         return trim($text);
     }
 }
