@@ -140,14 +140,7 @@ class EnergyExpertsRuParser implements ParserInterface
 
             $this->addItemPost($post, NewsPostItem::TYPE_QUOTE, $nodeValue);
 
-        } elseif ($node->childNodes->count()) {
-
-            foreach ($node->childNodes as $childNode) {
-
-                $this->setItemPostValue($post, $childNode);
-            }
-
-        }  elseif ($nodeValue && $nodeValue != $post->description) {
+        }  elseif ($nodeValue && $nodeValue != $post->description && mb_strpos($post->description, $nodeValue) === false) {
 
             $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
 
