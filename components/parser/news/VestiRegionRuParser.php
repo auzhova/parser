@@ -110,15 +110,39 @@ class VestiRegionRuParser implements ParserInterface
 
         } elseif ($node->nodeName == 'a' && strpos($href = $this->getHeadUrl($node->getAttribute('href')), 'http') !== false) {
 
-            $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
+            if ($node->childNodes && $node->firstChild->nodeName == 'img') {
 
-        } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('src'))) != $post->image) {
+                $imgSrc = $node->firstChild->getAttribute('data-big');
+                if (!$imgSrc) {
+                    $imgSrc = $node->firstChild->getAttribute('src');
+                }
+                $imgSrc = $this->getHeadUrl($imgSrc);
+
+                if (!$post->image) {
+
+                    $post->image = $imgSrc;
+
+                } elseif ($imgSrc != $post->image) {
+
+                    $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->firstChild->getAttribute('title'), $imgSrc);
+
+                }
+            } else {
+                $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
+            }
+
+        } elseif ($node->nodeName == 'img') {
+            $imgSrc = $node->getAttribute('data-big');
+            if (!$imgSrc) {
+                $imgSrc = $node->getAttribute('src');
+            }
+            $imgSrc = $this->getHeadUrl($imgSrc);
 
             if (!$post->image) {
 
                 $post->image = $imgSrc;
 
-            } else {
+            } elseif ($imgSrc != $post->image) {
 
                 $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->getAttribute('title'), $imgSrc);
 
@@ -279,6 +303,9 @@ class VestiRegionRuParser implements ParserInterface
         $search = array_merge(["&nbsp;"], $search);
         $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
+        if (($point = mb_stripos($text, '.')) !== false && $point == 0) {
+            $text = mb_substr($text, $point+1);
+        }
         return trim($text);
     }
 }
