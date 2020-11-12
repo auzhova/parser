@@ -125,7 +125,7 @@ class KurskDailyNewsRuParser implements ParserInterface
 
             $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
 
-        } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('data-lazy-src'))) != $post->image && getimagesize($imgSrc)) {
+        } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('data-lazy-src'))) != $post->image && $imgSrc != self::SITE_URL) {
 
             $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->getAttribute('title'), $imgSrc);
 
@@ -177,7 +177,13 @@ class KurskDailyNewsRuParser implements ParserInterface
         $date = implode('.',$fullDate);
         $newDate = new DateTime($date);
         $newDate->setTimezone(new DateTimeZone("UTC"));
-        return $newDate->format("Y-m-d H:i:s");
+        $newDate = $newDate->format("Y-m-d H:i:s");
+        $now = new DateTime();
+        $time = $now->format('H:i:s');
+        if (strpos($newDate, '00:00:00') != false) {
+            $newDate = str_replace('00:00:00', $time, $newDate);
+        }
+        return $newDate;
     }
 
 
