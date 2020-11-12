@@ -142,7 +142,14 @@ class TuranTodayComParser implements ParserInterface
 
         } elseif ($node->nodeName == 'a' && strpos($href = $this->getHeadUrl($node->getAttribute('href')), 'http') !== false) {
 
-            $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
+            if ($node->childNodes && $node->firstChild->nodeName == 'img' &&
+                $imgSrc = $this->getHeadUrl($node->firstChild->getAttribute('src'))) {
+                if ($imgSrc != $post->image) {
+                    $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->firstChild->getAttribute('title'), $imgSrc);
+                }
+            } else {
+                $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
+            }
 
         } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('src'))) != $post->image && getimagesize($imgSrc)) {
 
