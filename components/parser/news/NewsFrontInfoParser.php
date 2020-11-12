@@ -196,7 +196,7 @@ class NewsFrontInfoParser implements ParserInterface
     protected function encodeUrl(string $url): string
     {
         $partsUrl = parse_url($url);
-        if (preg_match('/[А-Яа-яЁё]/iu', $partsUrl['host'])) {
+        if (isset($partsUrl['host']) && is_string($partsUrl['host']) && preg_match('/[А-Яа-яЁё]/iu', $partsUrl['host'])) {
             $host = idn_to_ascii($partsUrl['host']);
             $url = str_replace($partsUrl['host'], $host, $url);
         }
