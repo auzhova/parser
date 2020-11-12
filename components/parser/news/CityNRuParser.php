@@ -45,7 +45,8 @@ class CityNRuParser implements ParserInterface
             $itemCrawler = new Crawler($contentPage);
             $content = $itemCrawler->filterXPath('//div[@class="main_content"]');
             $title = $content->filterXPath("//h1[@itemprop='headline']")->text();
-            $date = $this->getDate($content->filterXPath("//div[@class='news_time_date']")->text());
+            $date = $this->getDate($content->filterXPath("//div[@class='news_time']")->text() . ' '
+                . $content->filterXPath("//div[@class='news_date']")->text());
             $image = null;
             $imgSrc = $content->filterXPath('//img');
             if ($imgSrc->getNode(0)) {
