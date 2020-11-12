@@ -147,8 +147,9 @@ class Mir24TvParser implements ParserInterface
 
             }
         } elseif ($nodeValue && $node->parentNode->nodeName == 'blockquote') {
-
-            $this->addItemPost($post, NewsPostItem::TYPE_QUOTE, $nodeValue);
+            if (!$node->parentNode->getAttribute('data-instgrm-permalink')) {
+                $this->addItemPost($post, NewsPostItem::TYPE_QUOTE, $nodeValue);
+            }
 
         } elseif ($node->childNodes->count()) {
 
@@ -232,6 +233,10 @@ class Mir24TvParser implements ParserInterface
      */
     protected function getListNews(string $page): array
     {
+        return [
+            'https://mir24.tv/news/16432484/anglichanka-bolshe-mesyaca-pisala-nahodyashcheisya-v-kome-podruge-i-ta-ochnulas'
+        ];
+
         $records = [];
 
         $crawler = new Crawler($page);
@@ -278,12 +283,18 @@ class Mir24TvParser implements ParserInterface
      */
     protected function clearText(string $text, array $search = []): string
     {
+        if ($text == '.') {
+            return '';
+        }
         $text = html_entity_decode($text);
         $text = strip_tags($text);
         $text = htmlentities($text);
         $search = array_merge(["&nbsp;","\r\n", "\n", "\t"], $search);
         $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
+        if (($point = mb_stripos($text, '.')) !== false && $point == 0) {
+            $text = mb_substr($text, $point+1);
+        }
         return trim($text);
     }
 }
