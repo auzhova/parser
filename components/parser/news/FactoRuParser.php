@@ -129,7 +129,8 @@ class FactoRuParser implements ParserInterface
 
             $this->addItemPost($post, NewsPostItem::TYPE_HEADER, $nodeValue, null, null, (int)substr($node->nodeName, 1));
 
-        } elseif ($node->nodeName == 'a' && strpos($href = $this->getHeadUrl($node->getAttribute('href')), 'http') !== false) {
+        } elseif ($node->nodeName == 'a' && strpos($href = $this->getHeadUrl($node->getAttribute('href')), 'http') !== false &&
+            strpos($href = $this->getHeadUrl($node->getAttribute('href')), 'mailto') === false) {
 
             $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
 
@@ -153,8 +154,18 @@ class FactoRuParser implements ParserInterface
         } elseif ($node->childNodes->count()) {
 
             foreach ($node->childNodes as $childNode) {
-
-                $this->setItemPostValue($post, $childNode);
+                $classes = ['wrap-banner text-center', 'item-detail', 'wrap-block'];
+                $next = false;
+                if ($childNode->attributes && $attrClass = $childNode->getAttribute('class')) {
+                    foreach ($classes as $class) {
+                        if (strpos($attrClass, $class) == false) {
+                            $next = true;
+                        }
+                    }
+                }
+                if (!$next && $childNode->nodeName != '#comment') {
+                    $this->setItemPostValue($post, $childNode);
+                }
             }
 
         }  elseif ($nodeValue && $nodeValue != $post->description && mb_strpos($post->description, $nodeValue) === false) {
@@ -298,6 +309,9 @@ class FactoRuParser implements ParserInterface
         $text = str_replace($search, ' ', $text);
         $text = str_replace(["\r\n", "\r", "\n", "\t", ], '', $text);
         $text = html_entity_decode($text);
+        if (($point = mb_stripos($text, '.')) !== false && $point == 0) {
+            $text = mb_substr($text, $point+1);
+        }
         return trim($text);
     }
 }
