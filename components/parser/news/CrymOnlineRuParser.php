@@ -47,7 +47,7 @@ class CrymOnlineRuParser implements ParserInterface
             $title = $content->filterXPath('//h1[@id="news-title"]')->text();
             $dateSrc = $content->filterXPath('//span[@class="date"]');
             $date = '';
-            if (!$dateSrc->getNode(0)) {
+            if ($dateSrc->getNode(0)) {
                 $date = $dateSrc->text();
             }
             $date = $this->getDate($date);
