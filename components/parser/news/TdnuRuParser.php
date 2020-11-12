@@ -21,7 +21,7 @@ class TdnuRuParser implements ParserInterface
 {
     const USER_ID = 2;
     const FEED_ID = 2;
-    const SITE_URL = 'https://tdnu.ru/';
+    const SITE_URL = 'https://tdnu.ru';
 
     public static function run(): array
     {
@@ -37,21 +37,21 @@ class TdnuRuParser implements ParserInterface
         $newsPage = $this->getPageContent($urlNews);
         $newsList = $this->getListNews($newsPage);
         foreach ($newsList as $newsUrl) {
-            $url = $newsUrl;
+            $url = self::SITE_URL . $newsUrl;
             $contentPage = $this->getPageContent($url);
             if (!$contentPage) {
                 continue;
             }
 
             $itemCrawler = new Crawler($contentPage);
-            $title = $itemCrawler->filterXPath('//div[@class="entry-header"]')->filterXPath("//h1")->text();
-            $date = $this->getDate($itemCrawler->filterXPath('//div[@class="jeg_meta_date"]/a')->text());
+            $title = $itemCrawler->filterXPath("//h1[@class='page-title']")->text();
+            $date = $this->getDate($itemCrawler->filterXPath('//time[@itemprop="datePublished"]')->attr('datetime'));
             $image = null;
-            $imgSrc = $itemCrawler->filterXPath('//div[@class="jeg_featured featured_image"]')->filterXPath("//a");
+            $imgSrc = $itemCrawler->filterXPath('//div[@itemprop="articleBody"]')->filterXPath("//img[@class='is-lazy-img']");
             if ($imgSrc->getNode(0)) {
-                $image = $this->getHeadUrl($imgSrc->attr('href'));
+                $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
-            $description = $itemCrawler->filterXPath("//div[@class='content-inner ']/p[1]")->text();
+            $description = $title;
 
             $post = new NewsPost(
                 self::class,
@@ -62,10 +62,11 @@ class TdnuRuParser implements ParserInterface
                 $image
             );
 
-            $newContentCrawler = $itemCrawler->filterXPath("//div[@class='content-inner ']")->children();
+            $newContentCrawler = $itemCrawler->filterXPath('//div[@itemprop="articleBody"]')->children();
             foreach ($newContentCrawler as $contentNew) {
                 if ($contentNew->childNodes->count() > 1) {
                     foreach ($contentNew->childNodes as $childNode) {
+
                         if ($childNode->nodeName == 'figure' || $childNode->nodeName == 'script' || $childNode->nodeName == '#comment') {
                             continue;
                         }
@@ -143,10 +144,14 @@ class TdnuRuParser implements ParserInterface
                 $this->setItemPostValue($post, $childNode);
             }
 
-        }  elseif ($nodeValue && $nodeValue != $post->description) {
+        }  elseif ($nodeValue && $nodeValue != $post->description && $nodeValue != $post->title &&
+            mb_strpos($post->description, $nodeValue) === false && mb_strpos($post->title, $nodeValue) === false) {
 
-            $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
-
+            if ($post->title == $post->description) {
+                $post->description = $nodeValue;
+            } else {
+                $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
+            }
         }
     }
 
@@ -167,7 +172,12 @@ class TdnuRuParser implements ParserInterface
         $enMonths = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', $today, $yesterday];
         $newDate = new DateTime(str_ireplace($ruMonths, $enMonths, $date));
         $newDate->setTimezone(new DateTimeZone("UTC"));
-        return $newDate->format("Y-m-d H:i:s");
+        $newDate = $newDate->format("Y-m-d H:i:s");
+        $time = $now->format('H:i:s');
+        if (strpos($newDate, '00:00:00') != false) {
+            $newDate = str_replace('00:00:00', $time, $newDate);
+        }
+        return $newDate;
     }
 
 
@@ -227,9 +237,12 @@ class TdnuRuParser implements ParserInterface
         $records = [];
 
         $crawler = new Crawler($page);
-        $list = $crawler->filterXPath("//*[@class='jeg_post_title']/a");
+        $list = $crawler->filterXPath("//*[@class='b-section-item__btns']/a");
         foreach ($list as $item) {
             $href = $item->getAttribute("href");
+            if ($href == '/article/news/') {
+                continue;
+            }
             if (!in_array($href, $records)) {
                 $records[] = $href;
             }
@@ -270,6 +283,9 @@ class TdnuRuParser implements ParserInterface
      */
     protected function clearText(string $text, array $search = []): string
     {
+        if ($text == '.') {
+            return '';
+        }
         $text = html_entity_decode($text);
         $text = strip_tags($text);
         $text = htmlentities($text);
