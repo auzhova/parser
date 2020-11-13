@@ -95,7 +95,7 @@ class NewsPostItem
                 break;
             case self::TYPE_LINK:
                 if (!$this->link || $this->link == '' || !filter_var($this->link, FILTER_VALIDATE_URL))
-                    throw new Exception("Invalid postItem link: $parser");
+                    throw new Exception("Invalid postItem link: $parser $this->link");
                 break;
             case self::TYPE_IMAGE:
                 if (!$this->image || $this->image == '' || !filter_var($this->image, FILTER_VALIDATE_URL))
