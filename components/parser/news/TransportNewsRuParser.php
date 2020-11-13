@@ -41,10 +41,10 @@ class TransportNewsRuParser implements ParserInterface
             $contentPage = $this->getPageContent($url);
             $itemCrawler = new Crawler($contentPage);
 
-            $title = $itemCrawler->filterXPath("//h1[@class='entry-title']")->text();
+            $title = $this->clearText($itemCrawler->filterXPath("//h1[@class='entry-title']")->text());
             $date = $this->getDate($itemCrawler->filterXPath("//*[@id='post-" . $namePage[0] . "']/div[1]")->text());
             $image = $this->getHeadUrl($itemCrawler->filterXPath("//*[@class='entry-content']/*/img")->attr('src'));
-            $description = $itemCrawler->filterXPath("//*[@class='entry-content']/p[1]")->text();
+            $description = $title;
 
             $post = new NewsPost(
                 self::class,
@@ -65,7 +65,11 @@ class TransportNewsRuParser implements ParserInterface
                         $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $childNode->getAttribute('href'));
 
                     } elseif ($nodeValue) {
-                        $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
+                        if ($post->description == $post->title) {
+                            $post->description = $nodeValue;
+                        } else {
+                            $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
+                        }
                     }
                 }
             }
@@ -180,6 +184,9 @@ class TransportNewsRuParser implements ParserInterface
      */
     protected function clearText(string $text, array $search = []): string
     {
+        if ($text == '.') {
+            return '';
+        }
         $text = html_entity_decode($text);
         $text = strip_tags($text);
         $text = htmlentities($text);
