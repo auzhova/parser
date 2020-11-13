@@ -47,10 +47,6 @@ class TdnuRuParser implements ParserInterface
             $title = $itemCrawler->filterXPath("//h1[@class='page-title']")->text();
             $date = $this->getDate($itemCrawler->filterXPath('//time[@itemprop="datePublished"]')->attr('datetime'));
             $image = null;
-            $imgSrc = $itemCrawler->filterXPath('//div[@itemprop="articleBody"]')->filterXPath("//img[@class='is-lazy-img']");
-            if ($imgSrc->getNode(0)) {
-                $image = $this->getHeadUrl($imgSrc->attr('src'));
-            }
             $description = $title;
 
             $post = new NewsPost(
@@ -120,9 +116,13 @@ class TdnuRuParser implements ParserInterface
 
             $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
 
-        } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('data-src'))) != $post->image && getimagesize($imgSrc)) {
+        } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('data-src'))) != $post->image) {
 
-            $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->getAttribute('title'), $imgSrc);
+            if (!$post->image) {
+                $post->image = $imgSrc;
+            } else {
+                $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->getAttribute('title'), $imgSrc);
+            }
 
         } elseif ($node->nodeName == 'iframe') {
             $src = $this->getHeadUrl($node->getAttribute('src'));
