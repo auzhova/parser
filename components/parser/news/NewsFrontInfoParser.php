@@ -46,13 +46,12 @@ class NewsFrontInfoParser implements ParserInterface
             $title = $itemCrawler->filterXPath("//h1[@class='entry-title']")->text();
             $date = $this->getDate($itemCrawler->filterXPath("//div[@class='date-style article__date']")->text());
             $image = null;
-            $imgSrc = $itemCrawler->filterXPath("//div[@class='article__content']/*/img");
+            $imgSrc = $itemCrawler->filterXPath("//div[@class='article__content']")->filterXPath("//p/img");
             if ($imgSrc->getNode(0)) {
-                $image = $this->getHeadUrl($imgSrc->attr('src'));
+                $image = $this->getHeadUrl($imgSrc->attr('data-lazy-src'));
                 if (!getimagesize($image)){
                     $image = $this->getHeadUrl($itemCrawler->filterXPath("//meta[@property='og:image:secure_url']")->attr('content'));
                 }
-
             }
             $description = $itemCrawler->filterXPath("//div[@class='article__content']")->filterXPath('//p[1]')->text();
 
