@@ -60,12 +60,7 @@ class VnvInfoParser implements ParserInterface
             if ($galery->getNode(0)) {
                 $description = $itemCrawler->filterXPath("//div[@class='field-item even']")->text();
             }else {
-                $i = 1;
-                $description = $itemCrawler->filterXPath("//div[@class='field-item even']/p[" . $i . "]")->text();
-                do {
-                    $i++;
-                    $description = $itemCrawler->filterXPath("//div[@class='field-item even']/p[" . $i . "]")->text();
-                } while (empty($description));
+                $description = $title;
             }
 
             $post = new NewsPost(
@@ -181,8 +176,11 @@ class VnvInfoParser implements ParserInterface
 
         }  elseif ($nodeValue && $nodeValue != $post->description) {
 
-            $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
-
+            if ($post->description == $post->title) {
+                $post->description = $nodeValue;
+            } else {
+                $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
+            }
         }
     }
 
