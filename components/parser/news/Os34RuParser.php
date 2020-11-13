@@ -42,16 +42,12 @@ class Os34RuParser implements ParserInterface
             if (!$contentPage) {
                 continue;
             }
-dump($url);
+
             $itemCrawler = new Crawler($contentPage);
             $content = $itemCrawler->filterXPath('//div[@class="l-news-detail"]');
             $title = $content->filterXPath('//h1[@class="page-title"]')->text();
             $date = $this->getDate($content->filterXPath('//time[@class="b-meta-item"]')->text());
             $image = null;
-            $imgSrc = $content->filterXPath('//div[@itemprop="articleBody"]')->filterXPath('//img');
-            if ($imgSrc->getNode(0)) {
-                $image = $this->getHeadUrl($imgSrc->attr('src'));
-            }
             $description = $itemCrawler->filterXPath('//div[@class="b-news-detail-body js-news-detail"]/p[1]');
             if ($description->getNode(0)) {
                 $description = $this->clearText($description->text());
@@ -133,9 +129,13 @@ dump($url);
 
             $this->addItemPost($post, NewsPostItem::TYPE_LINK, $nodeValue, null, $href);
 
-        } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('src'))) != $post->image && getimagesize($imgSrc)) {
+        } elseif ($node->nodeName == 'img' && ($imgSrc = $this->getHeadUrl($node->getAttribute('data-src'))) != $post->image) {
 
-            $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->getAttribute('title'), $imgSrc);
+            if (!$post->image) {
+                $post->image = $imgSrc;
+            } else {
+                $this->addItemPost($post, NewsPostItem::TYPE_IMAGE, $node->getAttribute('title'), $imgSrc);
+            }
 
         } elseif ($node->nodeName == 'iframe') {
             $src = $this->getHeadUrl($node->getAttribute('src'));
