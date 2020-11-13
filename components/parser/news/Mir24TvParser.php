@@ -51,13 +51,15 @@ class Mir24TvParser implements ParserInterface
             if ($imgSrc->getNode(0)) {
                 $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
-
+            /*
             $description = $content->filterXPath('//div[@class="article-content js-mediator-article"]')->children();
             if ($description->getNode(0) && empty($description->getNode(0)->nodeValue)) {
                 $description = $description->getNode(1)->nodeValue;
             } else {
                 $description = $description->text();
             }
+            */
+            $description = $title;
 
             $post = new NewsPost(
                 self::class,
@@ -160,8 +162,11 @@ class Mir24TvParser implements ParserInterface
 
         }  elseif ($nodeValue && $nodeValue != $post->description) {
 
-            $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
-
+            if ($post->description == $post->title) {
+                $post->description = $nodeValue;
+            }else{
+                $this->addItemPost($post, NewsPostItem::TYPE_TEXT, $nodeValue);
+            }
         }
     }
 
