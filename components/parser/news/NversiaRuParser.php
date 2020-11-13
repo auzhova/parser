@@ -57,6 +57,9 @@ class NversiaRuParser implements ParserInterface
                 $image = $this->getHeadUrl($imgSrc->attr('src'));
             }
             $description = $this->clearText($itemCrawler->filterXPath("//div[@class='article']")->filterXPath('//p[1]')->text());
+            if (!$description) {
+                $description = $this->clearText($itemCrawler->filterXPath("//div[@class='article-lead']")->filterXPath('//p[1]')->text());
+            }
 
             $post = new NewsPost(
                 self::class,
@@ -185,6 +188,7 @@ class NversiaRuParser implements ParserInterface
      */
     protected function getHeadUrl($url, $det = ''): string
     {
+        $url = trim(urldecode($url));
         $url = strpos($url, 'http') === false || strpos($url, 'http') > 0
             ? self::SITE_URL . $det . $url
             : $url;
@@ -284,6 +288,9 @@ class NversiaRuParser implements ParserInterface
         $search = array_merge(["&nbsp;"], $search);
         $text = str_replace($search, ' ', $text);
         $text = html_entity_decode($text);
+        if (($point = mb_stripos($text, '.')) !== false && $point == 0) {
+            $text = mb_substr($text, $point+1);
+        }
         return trim($text);
     }
 }
